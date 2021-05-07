@@ -1,16 +1,12 @@
 package edu.coursera.concurrent;
 
-import junit.framework.TestCase;
-
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.atomic.AtomicLong;
-
 import edu.coursera.concurrent.CoarseLists.CoarseList;
 import edu.coursera.concurrent.CoarseLists.RWCoarseList;
+import junit.framework.TestCase;
+
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ListSetTest extends TestCase {
     private final int randNumsLength = 10_000;
@@ -26,7 +22,7 @@ public class ListSetTest extends TestCase {
     }
 
     private static void printStats(TestResults ref, TestResults test,
-            final SequenceGenerator seq, final String datasetName) {
+                                   final SequenceGenerator seq, final String datasetName) {
         System.out.println("=========================================================");
         System.out.println(test.lbl + " vs. " + ref.lbl + " (" + datasetName + " " + seq.getLabel() + ")");
         System.out.println("=========================================================");
@@ -60,7 +56,7 @@ public class ListSetTest extends TestCase {
                 getNCores() * 6 * randNumsLength, randNumsLength);
         final SequenceGenerator removeSeq = new ReversedSequenceGenerator(
                 new RepeatingSequenceGenerator(getNCores() * 6 * randNumsLength,
-                    randNumsLength));
+                        randNumsLength));
 
         final double expectedAdd = 0.5;
         final double expectedContains = 0.6;
@@ -135,10 +131,10 @@ public class ListSetTest extends TestCase {
     }
 
     private void testCoarseGrainedLockingHelper(final SequenceGenerator addSeq,
-            final SequenceGenerator containsSeq,
-            final SequenceGenerator removeSeq, final double expectedAdd,
-            final double expectedContains, final double expectedRemove,
-            final String datasetName) throws InterruptedException {
+                                                final SequenceGenerator containsSeq,
+                                                final SequenceGenerator removeSeq, final double expectedAdd,
+                                                final double expectedContains, final double expectedRemove,
+                                                final String datasetName) throws InterruptedException {
 
         final TestResultsPair results = runKernel(() -> new CoarseList(),
                 "CoarseList", () -> new SyncList(), "SyncList", addSeq,
@@ -162,31 +158,31 @@ public class ListSetTest extends TestCase {
 
         final double addImprovement = lockResults.addRate / syncResults.addRate;
         final double containsImprovement = lockResults.containsRate /
-            syncResults.containsRate;
+                syncResults.containsRate;
         final double removeImprovement = lockResults.removeRate /
-            syncResults.removeRate;
+                syncResults.removeRate;
 
         final String addmsg = String.format("Expected add throughput to remain " +
-                "similar (at least %fx) with locks, but found %fx", expectedAdd,
+                        "similar (at least %fx) with locks, but found %fx", expectedAdd,
                 addImprovement);
         assertTrue(addmsg, addImprovement >= expectedAdd);
 
         final String containsmsg = String.format("Expected contains throughput to " +
-                "remain similar (at least %fx) with locks, but found %fx",
+                        "remain similar (at least %fx) with locks, but found %fx",
                 expectedContains, containsImprovement);
         assertTrue(containsmsg, containsImprovement >= expectedContains);
 
         final String removemsg = String.format("Expected remove throughput to " +
-                "remain similar (at least %fx) with locks, but found %fx",
+                        "remain similar (at least %fx) with locks, but found %fx",
                 expectedRemove, removeImprovement);
         assertTrue(removemsg, removeImprovement >= expectedRemove);
     }
 
     public void testReadWriteLocksHelper(final SequenceGenerator addSeq,
-            final SequenceGenerator containsSeq,
-            final SequenceGenerator removeSeq, final double expectedAdd,
-            final double expectedContains, final double expectedRemove,
-            final String datasetName) throws InterruptedException {
+                                         final SequenceGenerator containsSeq,
+                                         final SequenceGenerator removeSeq, final double expectedAdd,
+                                         final double expectedContains, final double expectedRemove,
+                                         final String datasetName) throws InterruptedException {
         final TestResultsPair results = runKernel(() -> new RWCoarseList(),
                 "RWCoarseList", () -> new SyncList(), "SyncList", addSeq,
                 containsSeq, removeSeq);
@@ -209,9 +205,9 @@ public class ListSetTest extends TestCase {
 
         final double addImprovement = rwResults.addRate / syncResults.addRate;
         final double containsImprovement = rwResults.containsRate /
-            syncResults.containsRate;
+                syncResults.containsRate;
         final double removeImprovement = rwResults.removeRate /
-            syncResults.removeRate;
+                syncResults.removeRate;
 
         final String addmsg = String.format("Expected add throughput " +
                 "improvement to be at least %fx with read-write locks, but " +
@@ -230,9 +226,9 @@ public class ListSetTest extends TestCase {
     }
 
     private static TestResultsPair runKernel(final ListFactory factoryA,
-            final String lblA, final ListFactory factoryB, final String lblB,
-            final SequenceGenerator addSeq, final SequenceGenerator containsSeq,
-            final SequenceGenerator removeSeq) throws InterruptedException {
+                                             final String lblA, final ListFactory factoryB, final String lblB,
+                                             final SequenceGenerator addSeq, final SequenceGenerator containsSeq,
+                                             final SequenceGenerator removeSeq) throws InterruptedException {
         final int numThreads = getNCores();
 
         /*
@@ -282,7 +278,7 @@ public class ListSetTest extends TestCase {
             threads[t] = new Thread(() -> {
                 try {
                     barrier.await();
-                } catch (InterruptedException|BrokenBarrierException ie) {
+                } catch (InterruptedException | BrokenBarrierException ie) {
                     throw new RuntimeException(ie);
                 }
 
@@ -304,9 +300,9 @@ public class ListSetTest extends TestCase {
     }
 
     private static TestResults mainKernel(final int numThreads,
-            final ListSet list, final String lbl,
-            final SequenceGenerator addSeq, final SequenceGenerator containsSeq,
-            final SequenceGenerator removeSeq) throws InterruptedException {
+                                          final ListSet list, final String lbl,
+                                          final SequenceGenerator addSeq, final SequenceGenerator containsSeq,
+                                          final SequenceGenerator removeSeq) throws InterruptedException {
 
         AddTestThread[] addRunnables = new AddTestThread[numThreads];
         ContainsTestThread[] containsRunnables = new ContainsTestThread[numThreads];
@@ -330,9 +326,9 @@ public class ListSetTest extends TestCase {
         Entry curr = prev.next;
         while (curr != null) {
             assertTrue("List was not sorted, index " +
-                    (listLengthAfterAdds - 1) + " is " +
-                    prev.object.intValue() + " and index " +
-                    listLengthAfterAdds + " is " + curr.object.intValue(),
+                            (listLengthAfterAdds - 1) + " is " +
+                            prev.object.intValue() + " and index " +
+                            listLengthAfterAdds + " is " + curr.object.intValue(),
                     curr.object.intValue() > prev.object.intValue());
 
             prev = curr;
@@ -390,13 +386,13 @@ public class ListSetTest extends TestCase {
         }
 
         // Ops per second
-        final double addRate = (double)(numThreads * addSeq.sequenceLength()) /
-            (double)addTime;
-        final double containsRate = (double)(numThreads * containsSeq.sequenceLength()) /
-            (double)containsTime;
-        final double removeRate = (double)(numThreads * removeSeq.sequenceLength()) /
-            (double)removeTime;
-        return new TestResults(lbl, addRate, containsRate, removeRate, 
+        final double addRate = (double) (numThreads * addSeq.sequenceLength()) /
+                (double) addTime;
+        final double containsRate = (double) (numThreads * containsSeq.sequenceLength()) /
+                (double) containsTime;
+        final double removeRate = (double) (numThreads * removeSeq.sequenceLength()) /
+                (double) removeTime;
+        return new TestResults(lbl, addRate, containsRate, removeRate,
                 listLengthAfterAdds, totalContainsSuccesses,
                 totalContainsFailures, listLengthAfterRemoves,
                 totalRemovesSuccesses, totalRemovesFailures);
@@ -429,13 +425,13 @@ public class ListSetTest extends TestCase {
         public final int totalRemovesFailures;
 
         public TestResults(final String lbl,
-                final double addRate, final double containsRate,
-                final double removeRate, final int listLengthAfterAdds,
-                final int totalContainsSuccesses,
-                final int totalContainsFailures,
-                final int listLengthAfterRemoves,
-                final int totalRemovesSuccesses,
-                final int totalRemovesFailures) {
+                           final double addRate, final double containsRate,
+                           final double removeRate, final int listLengthAfterAdds,
+                           final int totalContainsSuccesses,
+                           final int totalContainsFailures,
+                           final int listLengthAfterRemoves,
+                           final int totalRemovesSuccesses,
+                           final int totalRemovesFailures) {
             this.lbl = lbl;
 
             this.addRate = addRate;
