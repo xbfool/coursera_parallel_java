@@ -1,23 +1,14 @@
 package edu.coursera.distributed;
 
-import scala.Tuple2;
-
-import java.util.Random;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-
-import org.apache.log4j.Logger;
-import org.apache.log4j.Level;
-
 import junit.framework.TestCase;
-
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import scala.Tuple2;
+
+import java.util.*;
 
 public class SparkTest extends TestCase {
 
@@ -32,9 +23,9 @@ public class SparkTest extends TestCase {
         Logger.getLogger("akka").setLevel(Level.OFF);
 
         final SparkConf conf = new SparkConf()
-            .setAppName("edu.coursera.distributed.PageRank")
-            .setMaster("local[" + nCores + "]")
-            .set("spark.ui.showConsoleProgress", "false");
+                .setAppName("edu.coursera.distributed.PageRank")
+                .setMaster("local[" + nCores + "]")
+                .set("spark.ui.showConsoleProgress", "false");
         JavaSparkContext ctx = new JavaSparkContext(conf);
         ctx.setLogLevel("OFF");
         return ctx;
@@ -54,8 +45,8 @@ public class SparkTest extends TestCase {
     }
 
     private static Website generateWebsite(final int i, final int nNodes,
-            final int minEdgesPerNode, final int maxEdgesPerNode,
-            final EdgeDistribution edgeConfig) {
+                                           final int minEdgesPerNode, final int maxEdgesPerNode,
+                                           final EdgeDistribution edgeConfig) {
         Random r = new Random(i);
 
         Website site = new Website(i);
@@ -63,14 +54,14 @@ public class SparkTest extends TestCase {
         final int nEdges;
         switch (edgeConfig) {
             case INCREASING:
-                double frac = (double)i / (double)nNodes;
-                double offset = (double)(maxEdgesPerNode - minEdgesPerNode)
-                    * frac;
-                nEdges = minEdgesPerNode + (int)offset;
+                double frac = (double) i / (double) nNodes;
+                double offset = (double) (maxEdgesPerNode - minEdgesPerNode)
+                        * frac;
+                nEdges = minEdgesPerNode + (int) offset;
                 break;
             case RANDOM:
                 nEdges = minEdgesPerNode +
-                    r.nextInt(maxEdgesPerNode - minEdgesPerNode);
+                        r.nextInt(maxEdgesPerNode - minEdgesPerNode);
                 break;
             case UNIFORM:
                 nEdges = maxEdgesPerNode;
@@ -115,8 +106,8 @@ public class SparkTest extends TestCase {
     }
 
     private static Website[] generateGraphArr(final int nNodes,
-            final int minEdgesPerNode, final int maxEdgesPerNode,
-            final EdgeDistribution edgeConfig) {
+                                              final int minEdgesPerNode, final int maxEdgesPerNode,
+                                              final EdgeDistribution edgeConfig) {
         Website[] sites = new Website[nNodes];
         for (int i = 0; i < sites.length; i++) {
             sites[i] = generateWebsite(i, nNodes, minEdgesPerNode,
@@ -141,7 +132,7 @@ public class SparkTest extends TestCase {
             Iterator<Integer> iter = sites[j].edgeIterator();
             while (iter.hasNext()) {
                 int target = iter.next();
-                newRanks[target] += ranks[j] / (double)sites[j].getNEdges();
+                newRanks[target] += ranks[j] / (double) sites[j].getNEdges();
             }
         }
 
@@ -153,8 +144,8 @@ public class SparkTest extends TestCase {
     }
 
     private static void testDriver(final int nNodes, final int minEdgesPerNode,
-            final int maxEdgesPerNode, final int niterations,
-            final EdgeDistribution edgeConfig) {
+                                   final int maxEdgesPerNode, final int niterations,
+                                   final EdgeDistribution edgeConfig) {
         System.err.println("Running the PageRank algorithm for " + niterations +
                 " iterations on a website graph of " + nNodes + " websites");
         System.err.println();
@@ -198,7 +189,7 @@ public class SparkTest extends TestCase {
             parResult = ranks.collect();
         }
         final long parElapsed = System.currentTimeMillis() - parStart;
-        final double speedup = (double)singleElapsed / (double)parElapsed;
+        final double speedup = (double) singleElapsed / (double) parElapsed;
         context.stop();
 
         Map<Integer, Double> keyed = new HashMap<Integer, Double>();
@@ -224,8 +215,8 @@ public class SparkTest extends TestCase {
 
         final double expectedSpeedup = 1.35;
         final String msg = "Expected at least " + expectedSpeedup +
-            "x speedup, but only saw " + speedup + "x. Sequential time = " +
-            singleElapsed + " ms, parallel time = " + parElapsed + " ms";
+                "x speedup, but only saw " + speedup + "x. Sequential time = " +
+                singleElapsed + " ms, parallel time = " + parElapsed + " ms";
         assertTrue(msg, speedup >= expectedSpeedup);
     }
 
