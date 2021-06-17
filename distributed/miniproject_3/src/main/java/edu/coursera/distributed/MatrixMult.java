@@ -55,6 +55,7 @@ public class MatrixMult {
         //mpi.MPI_Init();
         int rank = mpi.MPI_Comm_rank(mpi.MPI_COMM_WORLD);
         int num_procs = mpi.MPI_Comm_size(mpi.MPI_COMM_WORLD);
+        //    System.out.println("rank: " + rank + " total: " + num_procs);
         if (rank == 0) {
             double[] buf_a = a.getValues();
             int size_a = a.getNCols() * a.getNRows();
@@ -65,6 +66,7 @@ public class MatrixMult {
                         other_rank,
                         0,
                         mpi.MPI_COMM_WORLD);
+                //           System.out.println("send a from: " + 0 + " to: " + other_rank);
             }
 
             double[] buf_b = b.getValues();
@@ -76,45 +78,64 @@ public class MatrixMult {
                         other_rank,
                         1,
                         mpi.MPI_COMM_WORLD);
+                //           System.out.println("send b from: " + 0 + " to: " + other_rank);
             }
         } else {
             int size_a = a.getNCols() * a.getNRows();
-            double[] buf_a = new double[size_a];
+            double[] buf_a = a.getValues();
             int size_b = b.getNCols() * b.getNRows();
-            double[] buf_b = new double[size_b];
+            double[] buf_b = b.getValues();
             mpi.MPI_Recv(buf_a, 0, size_a, 0, 0, mpi.MPI_COMM_WORLD);
+            //        System.out.println("recv a from: " + 0 + " to: " + rank);
             mpi.MPI_Recv(buf_b, 0, size_b, 0, 1, mpi.MPI_COMM_WORLD);
+            //         System.out.println("recv b from: " + 0 + " to: " + rank);
         }
-        if (rank != 0) {
-            for (int i = rank - 1; i < c.getNRows(); i += num_procs - 1) {
-                for (int j = 0; j < c.getNCols(); j++) {
-                    c.set(i, j, 0.0);
-                    for (int k = 0; k < b.getNRows(); k++) {
-                        c.incr(i, j, a.get(i, k) * b.get(k, j));
-                    }
-                }
-                double[] buf_c = c.getValues();
-                int size_c = c.getNCols();
-                int offset = i * c.getNCols();
-                mpi.MPI_Send(buf_c,
-                        offset,
-                        size_c,
-                        0,
-                        2,
-                        mpi.MPI_COMM_WORLD);
 
-            }
-        } else {
-            for (int i = 0; i < c.getNRows(); i++) {
-                int size_c = c.getNCols();
-                int offset = i * c.getNCols();
-                double[] buf_c = new double[size_c];
-                mpi.MPI_Recv(buf_c, offset, size_c, 0, 2, mpi.MPI_COMM_WORLD);
-                for (int j = 0; j < c.getNCols(); j++) {
-                    c.set(i, j, buf_c[j]);
+        int start = (c.getNRows() / num_procs) * rank;
+        int end = (c.getNRows() / num_procs) * (rank + 1);
+        int true_end = end > c.getNRows() ? c.getNRows() : end;
+        for (int i = start; i < true_end; i++) {
+            for (int j = 0; j < c.getNCols(); j++) {
+                c.set(i, j, 0.0);
+                for (int k = 0; k < b.getNRows(); k++) {
+                    c.incr(i, j, a.get(i, k) * b.get(k, j));
                 }
             }
         }
-        //mpi.MPI_Finalize();
+        //      System.out.println("rank: " + rank + "compute: " + "data from: " + start * c.getNCols() + " count: " + (true_end - start) * c.getNCols());
+        if (rank != 0) {
+            double[] buf_c = c.getValues();
+            //           System.out.println("start send c from: " + rank + " to: " + 0 + "data from: " + start * c.getNCols() + " count: " + (true_end - start) * c.getNCols());
+            int i_start = (c.getNRows() / num_procs) * rank;
+            int i_end = (c.getNRows() / num_procs) * (rank + 1);
+            int i_true_end = i_end > c.getNRows() ? c.getNRows() : i_end;
+            int count = (i_true_end - i_start) * c.getNCols();
+            mpi.MPI_Send(buf_c,
+                    i_start * c.getNCols(),
+                    count,
+                    0,
+                    2,
+                    mpi.MPI_COMM_WORLD);
+            //           System.out.println("end send c from: " + rank + " to: " + 0 + "data from: " + start * c.getNCols() + " count: " + (true_end - start) * c.getNCols());
+        } else {
+            for (int i = 1; i < num_procs; i++) {
+                int i_start = (c.getNRows() / num_procs) * i;
+                int i_end = (c.getNRows() / num_procs) * (i + 1);
+                int i_true_end = i_end > c.getNRows() ? c.getNRows() : i_end;
+                int count = (i_true_end - i_start) * c.getNCols();
+                double[] buf_c = c.getValues();
+                //System.out.println("start recv c from: " + i + " to: " + 0 + "data from: " + i_start * c.getNCols() + " count: " + count);
+                mpi.MPI_Recv(buf_c, i_start * c.getNCols(), count, i, 2, mpi.MPI_COMM_WORLD);
+                //System.out.println("end recv c from: " + i + " to: " + 0 + "data from: " + i_start * c.getNCols() + " count: " + count);
+                //System.out.println("i_start " + i_start + " i_true_end " + i_true_end);
+//                for (int j = i_start; j < i_true_end; j++) {
+//                    for (int k = 0; k < c.getNCols(); k++) {
+//                        c.set(j, k, buf_c[j * c.getNCols() + k]);
+//                    }
+//                }
+//                System.out.println("rank " + i + "compute over");
+            }
+        }
+//        System.out.println("rank: " + rank + " end");
     }
 }
