@@ -37,51 +37,64 @@ public final class FileServer {
 
             // TODO 1) Use socket.accept to get a Socket object
 
-            Socket s = socket.accept();
-            /*
-             * TODO 2) Using Socket.getInputStream(), parse the received HTTP
-             * packet. In particular, we are interested in confirming this
-             * message is a GET and parsing out the path to the file we are
-             * GETing. Recall that for GET HTTP packets, the first line of the
-             * received packet will look something like:
-             *
-             *     GET /path/to/file HTTP/1.1
-             */
-
-            InputStream input = s.getInputStream();
-            OutputStream output = s.getOutputStream();
-
-            String fileName = parseFileName(input);
-            if (fileName == null) {
-                replyHttp404(output);
-            } else {
-                serveFilename(fileName, fs, output);
-            }
-            /*
-             * TODO 3) Using the parsed path to the target file, construct an
-             * HTTP reply and write it to Socket.getOutputStream(). If the file
-             * exists, the HTTP reply should be formatted as follows:
-             *
-             *   HTTP/1.0 200 OK\r\n
-             *   Server: FileServer\r\n
-             *   \r\n
-             *   FILE CONTENTS HERE\r\n
-             *
-             * If the specified file does not exist, you should return a reply
-             * with an error code 404 Not Found. This reply should be formatted
-             * as:
-             *
-             *   HTTP/1.0 404 Not Found\r\n
-             *   Server: FileServer\r\n
-             *   \r\n
-             *
-             * Don't forget to close the output stream.
-             */
+            Socket x = socket.accept();
 
 
-            output.flush();
-            output.close();
-            s.close();
+            Runnable task = () -> {
+                try {
+                    InputStream input = x.getInputStream();
+                    OutputStream output = x.getOutputStream();
+                    /*
+                     * TODO 2) Using Socket.getInputStream(), parse the received HTTP
+                     * packet. In particular, we are interested in confirming this
+                     * message is a GET and parsing out the path to the file we are
+                     * GETing. Recall that for GET HTTP packets, the first line of the
+                     * received packet will look something like:
+                     *
+                     *     GET /path/to/file HTTP/1.1
+                     */
+
+
+                    String fileName = parseFileName(input);
+                    if (fileName == null) {
+                        replyHttp404(output);
+                    } else {
+                        serveFilename(fileName, fs, output);
+                    }
+                    /*
+                     * TODO 3) Using the parsed path to the target file, construct an
+                     * HTTP reply and write it to Socket.getOutputStream(). If the file
+                     * exists, the HTTP reply should be formatted as follows:
+                     *
+                     *   HTTP/1.0 200 OK\r\n
+                     *   Server: FileServer\r\n
+                     *   \r\n
+                     *   FILE CONTENTS HERE\r\n
+                     *
+                     * If the specified file does not exist, you should return a reply
+                     * with an error code 404 Not Found. This reply should be formatted
+                     * as:
+                     *
+                     *   HTTP/1.0 404 Not Found\r\n
+                     *   Server: FileServer\r\n
+                     *   \r\n
+                     *
+                     * Don't forget to close the output stream.
+                     */
+
+
+                    output.flush();
+                    output.close();
+                    x.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            };
+
+            task.run();
+
+            Thread thread = new Thread(task);
+            thread.start();
 
 
         }

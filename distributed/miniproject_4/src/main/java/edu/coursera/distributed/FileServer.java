@@ -1,12 +1,14 @@
 package edu.coursera.distributed;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.File;
+import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A basic and very limited implementation of a file server that responds to GET
@@ -17,8 +19,8 @@ public final class FileServer {
      * Main entrypoint for the basic file server.
      *
      * @param socket Provided socket to accept connections on.
-     * @param fs A proxy filesystem to serve files from. See the PCDPFilesystem
-     *           class for more detailed documentation of its usage.
+     * @param fs     A proxy filesystem to serve files from. See the PCDPFilesystem
+     *               class for more detailed documentation of its usage.
      * @param ncores The number of cores that are available to your
      *               multi-threaded file server. Using this argument is entirely
      *               optional. You are free to use this information to change
@@ -29,7 +31,7 @@ public final class FileServer {
      *                     IOExceptions during normal operation.
      */
     public void run(final ServerSocket socket, final PCDPFilesystem fs,
-            final int ncores) throws IOException {
+                    final int ncores) throws IOException {
         /*
          * Enter a spin loop for handling client requests to the provided
          * ServerSocket object.
@@ -37,10 +39,18 @@ public final class FileServer {
         while (true) {
 
             // TODO Delete this once you start working on your solution.
-            throw new UnsupportedOperationException();
 
+            Socket s = socket.accept();
             // TODO 1) Use socket.accept to get a Socket object
+            InputStream input = s.getInputStream();
+            OutputStream output = s.getOutputStream();
 
+            String fileName = parseFileName(input);
+            if (fileName == null) {
+                replyHttp404(output);
+            } else {
+                serveFilename(fileName, fs, output);
+            }
             /*
              * TODO 2) Now that we have a new Socket object, handle the parsing
              * of the HTTP message on that socket and returning of the requested
@@ -77,6 +87,54 @@ public final class FileServer {
              * If you wish to do so, you are free to re-use code from
              * MiniProject 2 to help with completing this MiniProject.
              */
+
+            output.flush();
+            output.close();
+            s.close();
+
         }
     }
+
+    private void serveFilename(String filename, final PCDPFilesystem fs, OutputStream output) {
+        final String contents = fs.readFile(new PCDPPath(filename));
+        if (null == contents) {
+            replyHttp404(output);
+        } else {
+            final PrintStream printer = new PrintStream(output);
+
+            printer.print("HTTP/1.0 200 OK\r\n");
+            printer.print("Server: FileServer\r\n");
+            printer.print("Content-Length: " + contents.length() + "\r\n");
+            printer.print("\r\n");
+            printer.print(contents);
+            printer.print("\r\n");
+
+            printer.flush();
+            printer.close();
+        }
+    }
+
+    private void replyHttp404(OutputStream output) {
+        final PrintStream printer = new PrintStream(output);
+
+        printer.print("HTTP/1.0 404 Not Found\r\n");
+        printer.print("Server: FileServer\r\n");
+        printer.print("\r\n");
+
+        printer.close();
+    }
+
+    private String parseFileName(InputStream input) {
+        Scanner scanner = new Scanner(input).useDelimiter("\\r\\n");
+        String line = scanner.next();
+
+        Pattern pattern = Pattern.compile("GET (.+) HTTP/\\d.\\d");
+        Matcher matcher = pattern.matcher(line);
+        if (!matcher.find()) {
+            return null;
+        }
+
+        return matcher.group(1);
+    }
+
 }
